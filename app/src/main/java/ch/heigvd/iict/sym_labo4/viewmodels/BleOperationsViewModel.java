@@ -14,7 +14,12 @@ import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
+import java.util.Calendar;
+import java.util.Date;
+import java.util.UUID;
+
 import no.nordicsemi.android.ble.BleManager;
+import no.nordicsemi.android.ble.data.Data;
 import no.nordicsemi.android.ble.observer.ConnectionObserver;
 
 /**
@@ -36,12 +41,30 @@ public class BleOperationsViewModel extends AndroidViewModel {
         return mIsConnected;
     }
 
+    private final MutableLiveData<Calendar> mCalendar = new MutableLiveData<>();
+    public LiveData<Calendar> getCalendar() { return mCalendar; }
+
+    private final MutableLiveData<Integer> mCptBtnClick = new MutableLiveData<>();
+    public LiveData<Integer> getCptBtnClick() { return mCptBtnClick; }
+
     //Services and Characteristics of the SYM Pixl
     private BluetoothGattService timeService = null, symService = null;
     private BluetoothGattCharacteristic currentTimeChar = null, integerChar = null, temperatureChar = null, buttonClickChar = null;
 
+    //UUID current time service
+    private UUID CURRENT_TIME_SERVICE = UUID.fromString("00001805-0000-1000-8000-00805f9b34fb");
+    private UUID CURRENT_TIME = UUID.fromString("00002a2b-0000-1000-8000-00805f9b34fb");
+
+    //UUID custom sym service
+    private UUID CUSTOM_SYM_SERVICE = UUID.fromString("3c0a1000-281d-4b48-b2a7-f15579a1c38f");
+    private UUID CUSTOM_SYM_INT = UUID.fromString("3c0a1001-281d-4b48-b2a7-f15579a1c38f");
+    private UUID CUSTOM_SYM_TEMPERATURE = UUID.fromString("3c0a1002-281d-4b48-b2a7-f15579a1c38f");
+    private UUID CUSTOM_SYM_BTN = UUID.fromString("3c0a1003-281d-4b48-b2a7-f15579a1c38f");
+
+
     public BleOperationsViewModel(Application application) {
         super(application);
+        this.mIsConnected.setValue(false);
         this.ble = new SYMBleManager(application.getApplicationContext());
         this.ble.setConnectionObserver(this.bleConnectionObserver);
     }
@@ -75,6 +98,10 @@ public class BleOperationsViewModel extends AndroidViewModel {
         vous pouvez placer ici les différentes méthodes permettant à l'utilisateur
         d'interagir avec le périphérique depuis l'activité
      */
+    public boolean sendCurrentTime() {
+        if(!isConnected().getValue() || currentTimeChar == null) return false;
+        return ble.sendCurrentTime();
+    }
 
     public boolean readTemperature() {
         if(!isConnected().getValue() || temperatureChar == null) return false;
@@ -153,7 +180,30 @@ public class BleOperationsViewModel extends AndroidViewModel {
                           caractéristiques (déclarés en lignes 40 et 41)
                         */
 
-                        return false; //FIXME si tout est OK, on retourne true, sinon la librairie appelera la méthode onDeviceDisconnected() avec le flag REASON_NOT_SUPPORTED
+                        //Check si tous les services/charactristic sont présent
+                        for(BluetoothGattService service : gatt.getServices()){
+                            UUID test = service.getUuid();
+                            if(CURRENT_TIME_SERVICE.equals(service.getUuid())) {
+                                timeService = service;
+                                for(BluetoothGattCharacteristic characteristic : service.getCharacteristics()){
+                                    if(CURRENT_TIME.equals(characteristic.getUuid())){
+                                        currentTimeChar = characteristic;
+                                    }
+                                }
+                            }else if(CUSTOM_SYM_SERVICE.equals(service.getUuid())){
+                                symService = service;
+                                for(BluetoothGattCharacteristic characteristic : service.getCharacteristics()){
+                                    if(CUSTOM_SYM_INT.equals(characteristic.getUuid())){
+                                        integerChar = characteristic;
+                                    }else if(CUSTOM_SYM_TEMPERATURE.equals(characteristic.getUuid())){
+                                        temperatureChar = characteristic;
+                                    }else if(CUSTOM_SYM_BTN.equals(characteristic.getUuid())){
+                                        buttonClickChar = characteristic;
+                                    }
+                                }
+                            }
+                        }
+                        return (currentTimeChar != null && integerChar != null && temperatureChar != null && buttonClickChar != null);
                     }
 
                     @Override
@@ -164,6 +214,24 @@ public class BleOperationsViewModel extends AndroidViewModel {
                             Dans notre cas il s'agit de s'enregistrer pour recevoir les notifications proposées par certaines
                             caractéristiques, on en profitera aussi pour mettre en place les callbacks correspondants.
                          */
+
+                        setNotificationCallback(currentTimeChar).with(((device, data) -> {
+                            Calendar calendar = Calendar.getInstance();
+                            calendar.set(Calendar.YEAR, data.getIntValue(Data.FORMAT_UINT16,0));
+                            calendar.set(Calendar.MONTH, data.getIntValue(Data.FORMAT_UINT8,2) - 1);
+                            calendar.set(Calendar.DAY_OF_MONTH, data.getIntValue(Data.FORMAT_UINT8,3));
+                            calendar.set(Calendar.HOUR_OF_DAY, data.getIntValue(Data.FORMAT_UINT8,4));
+                            calendar.set(Calendar.MINUTE, data.getIntValue(Data.FORMAT_UINT8,5));
+                            calendar.set(Calendar.SECOND, data.getIntValue(Data.FORMAT_UINT8,6));
+                        }));
+
+                        enableNotifications(currentTimeChar).enqueue();
+
+                        setNotificationCallback(buttonClickChar).with((device, data) -> {
+                            mCptBtnClick.setValue(data.getIntValue(Data.FORMAT_UINT8, 0));
+                        });
+
+                        enableNotifications(buttonClickChar).enqueue();
                     }
 
                     @Override
@@ -181,7 +249,27 @@ public class BleOperationsViewModel extends AndroidViewModel {
                 };
             }
             return mGattCallback;
+        };
+
+        public boolean sendCurrentTime() {
+            Calendar calendar = Calendar.getInstance();
+
+            byte[] val = new byte[8];
+            val[0] = (byte)(calendar.get(Calendar.YEAR));
+            val[1] = (byte)(calendar.get(Calendar.YEAR) >> 8);
+            val[2] = (byte)(calendar.get(Calendar.MONTH));
+            val[3] = (byte)(calendar.get(Calendar.DAY_OF_MONTH));
+            val[4] = (byte)(calendar.get(Calendar.HOUR));
+            val[5] = (byte)(calendar.get(Calendar.MINUTE));
+            val[6] = (byte)(calendar.get(Calendar.SECOND));
+
+            currentTimeChar.setValue(val);
+
+            writeCharacteristic(currentTimeChar, val).enqueue();
+
+            return false;
         }
+
 
         public boolean readTemperature() {
             /*  TODO

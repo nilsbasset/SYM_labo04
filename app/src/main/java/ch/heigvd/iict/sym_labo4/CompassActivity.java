@@ -88,4 +88,10 @@ public class CompassActivity extends AppCompatActivity implements SensorEventLis
         sensorManager.registerListener((SensorEventListener) this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
         sensorManager.registerListener((SensorEventListener) this, magneticField, SensorManager.SENSOR_DELAY_NORMAL);
     }
+
+    @Override
+    protected void onPause(){
+        super.onPause();
+        sensorManager.unregisterListener(this);
+    }
 }
