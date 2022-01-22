@@ -19,6 +19,11 @@
 
             <!-- TODO vous placerez dans ce layout toutes les vues nécessaires aux intéractions avec le périphérique BLE -->
 
+            <Button
+                android:id="@+id/send_current_time"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/ble_currenttime_set" />
         </LinearLayout>
 
     </ScrollView>

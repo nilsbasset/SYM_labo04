@@ -16,6 +16,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
+import android.widget.Button;
 import android.widget.ListView;
 import android.widget.TextView;
 
@@ -62,6 +63,9 @@ public class BleActivity extends BaseTemplateActivity {
     private Handler handler = null;
     private boolean isScanning = false;
 
+    //button
+    private Button sendCurrentTime = null;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -103,6 +107,11 @@ public class BleActivity extends BaseTemplateActivity {
         //ble events
         this.bleViewModel.isConnected().observe(this, (isConnected) -> updateGui() );
 
+        //Send current timer
+        this.sendCurrentTime = findViewById(R.id.send_current_time);
+        this.sendCurrentTime.setOnClickListener(v -> {
+            this.bleViewModel.sendCurrentTime();
+        });
     }
 
     @Override

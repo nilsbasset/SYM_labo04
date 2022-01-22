@@ -218,11 +218,12 @@ public class BleOperationsViewModel extends AndroidViewModel {
                         setNotificationCallback(currentTimeChar).with(((device, data) -> {
                             Calendar calendar = Calendar.getInstance();
                             calendar.set(Calendar.YEAR, data.getIntValue(Data.FORMAT_UINT16,0));
-                            calendar.set(Calendar.MONTH, data.getIntValue(Data.FORMAT_UINT8,2) - 1);
+                            calendar.set(Calendar.MONTH, data.getIntValue(Data.FORMAT_UINT8,2));
                             calendar.set(Calendar.DAY_OF_MONTH, data.getIntValue(Data.FORMAT_UINT8,3));
-                            calendar.set(Calendar.HOUR_OF_DAY, data.getIntValue(Data.FORMAT_UINT8,4));
+                            calendar.set(Calendar.HOUR, data.getIntValue(Data.FORMAT_UINT8,4));
                             calendar.set(Calendar.MINUTE, data.getIntValue(Data.FORMAT_UINT8,5));
                             calendar.set(Calendar.SECOND, data.getIntValue(Data.FORMAT_UINT8,6));
+                            calendar.set(Calendar.DAY_OF_WEEK, data.getIntValue(Data.FORMAT_UINT8,7));
                         }));
 
                         enableNotifications(currentTimeChar).enqueue();
@@ -257,11 +258,12 @@ public class BleOperationsViewModel extends AndroidViewModel {
             byte[] val = new byte[8];
             val[0] = (byte)(calendar.get(Calendar.YEAR));
             val[1] = (byte)(calendar.get(Calendar.YEAR) >> 8);
-            val[2] = (byte)(calendar.get(Calendar.MONTH));
+            val[2] = (byte)(calendar.get(Calendar.MONTH) + 1);
             val[3] = (byte)(calendar.get(Calendar.DAY_OF_MONTH));
             val[4] = (byte)(calendar.get(Calendar.HOUR));
             val[5] = (byte)(calendar.get(Calendar.MINUTE));
             val[6] = (byte)(calendar.get(Calendar.SECOND));
+            val[7] = (byte)(calendar.get(Calendar.DAY_OF_WEEK));
 
             currentTimeChar.setValue(val);
 
