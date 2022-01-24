@@ -17,6 +17,7 @@ import androidx.lifecycle.MutableLiveData;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.UUID;
+import java.lang.Integer;
 
 import no.nordicsemi.android.ble.BleManager;
 import no.nordicsemi.android.ble.data.Data;
@@ -111,6 +112,10 @@ public class BleOperationsViewModel extends AndroidViewModel {
         return ble.readTemperature();
     }
 
+    public boolean sendIntegerVal(int val) {
+        if(!isConnected().getValue() || integerChar == null) return false;
+        return ble.sendIntegerVal(val);
+    }
 
     private final ConnectionObserver bleConnectionObserver = new ConnectionObserver() {
         @Override
@@ -176,17 +181,8 @@ public class BleOperationsViewModel extends AndroidViewModel {
                         mConnection = gatt; //trick to force disconnection
                         Log.d(TAG, "isRequiredServiceSupported - TODO");
 
-                        /* TODO
-                        - Nous devons vérifier ici que le périphérique auquel on vient de se connecter possède
-                          bien tous les services et les caractéristiques attendues, on vérifiera aussi que les
-                          caractéristiques présentent bien les opérations attendues
-                        - On en profitera aussi pour garder les références vers les différents services et
-                          caractéristiques (déclarés en lignes 40 et 41)
-                        */
-
                         //Check si tous les services/charactristic sont présent
                         for(BluetoothGattService service : gatt.getServices()){
-                            UUID test = service.getUuid();
                             if(CURRENT_TIME_SERVICE.equals(service.getUuid())) {
                                 timeService = service;
                                 for(BluetoothGattCharacteristic characteristic : service.getCharacteristics()){
@@ -212,13 +208,6 @@ public class BleOperationsViewModel extends AndroidViewModel {
 
                     @Override
                     protected void initialize() {
-                        /*  TODO
-                            Ici nous somme sûr que le périphérique possède bien tous les services et caractéristiques
-                            attendus et que nous y sommes connectés. Nous pouvous effectuer les premiers échanges BLE:
-                            Dans notre cas il s'agit de s'enregistrer pour recevoir les notifications proposées par certaines
-                            caractéristiques, on en profitera aussi pour mettre en place les callbacks correspondants.
-                         */
-
                         setNotificationCallback(currentTimeChar).with(((device, data) -> {
                             Calendar calendar = Calendar.getInstance();
                             calendar.set(Calendar.YEAR, data.getIntValue(Data.FORMAT_UINT16,0));
@@ -228,6 +217,7 @@ public class BleOperationsViewModel extends AndroidViewModel {
                             calendar.set(Calendar.MINUTE, data.getIntValue(Data.FORMAT_UINT8,5));
                             calendar.set(Calendar.SECOND, data.getIntValue(Data.FORMAT_UINT8,6));
                             calendar.set(Calendar.DAY_OF_WEEK, data.getIntValue(Data.FORMAT_UINT8,7));
+                            mCalendar.setValue(calendar);
                         }));
 
                         enableNotifications(currentTimeChar).enqueue();
@@ -270,26 +260,23 @@ public class BleOperationsViewModel extends AndroidViewModel {
             val[7] = (byte)(calendar.get(Calendar.DAY_OF_WEEK));
 
             currentTimeChar.setValue(val);
-
-            writeCharacteristic(currentTimeChar, val).enqueue();
+            writeCharacteristic(currentTimeChar, val, BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT).enqueue();
 
             return true;
         }
 
-
         public boolean readTemperature() {
-            /*  TODO
-                on peut effectuer ici la lecture de la caractéristique température
-                la valeur récupérée sera envoyée à l'activité en utilisant le mécanisme
-                des MutableLiveData
-                On placera des méthodes similaires pour les autres opérations
-            */
             readCharacteristic(temperatureChar).with((device, data) -> {
                 mTemperature.setValue(data.getIntValue(Data.FORMAT_UINT16, 0) / 10);
             }).enqueue();
-            return true; //FIXME
+            return true;
         }
 
+        public boolean sendIntegerVal(int val) {
+            byte[] b = new byte[]{(byte) val};
+            integerChar.setValue(b);
+            writeCharacteristic(integerChar, b, BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT).enqueue();
+            return true;
+        }
     }
-
 }

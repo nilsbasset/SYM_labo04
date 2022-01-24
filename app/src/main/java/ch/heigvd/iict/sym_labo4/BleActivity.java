@@ -1,5 +1,6 @@
 package ch.heigvd.iict.sym_labo4;
 
+import android.app.AlertDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.le.BluetoothLeScanner;
@@ -8,6 +9,7 @@ import android.bluetooth.le.ScanFilter;
 import android.bluetooth.le.ScanResult;
 import android.bluetooth.le.ScanSettings;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.ParcelUuid;
@@ -20,6 +22,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.lifecycle.ViewModelProvider;
 
@@ -84,6 +87,17 @@ public class BleActivity extends BaseTemplateActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_ble);
 
+        AlertDialog alertDialog = new AlertDialog.Builder(this)
+                .setTitle("Informations :")
+                .setMessage("L'application nécessite l'activation du bluetooth")
+                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.dismiss();
+                    }
+                }).create();
+        alertDialog.show();
+
         this.handler = new Handler();
 
         //enable and start bluetooth - initialize bluetooth adapter
@@ -120,7 +134,7 @@ public class BleActivity extends BaseTemplateActivity {
         //ble events
         this.bleViewModel.isConnected().observe(this, (isConnected) -> updateGui() );
 
-        //Send current timer
+        //Send current time
         this.sendCurrentTimeBTN = findViewById(R.id.send_current_time);
         this.sendCurrentTimeBTN.setOnClickListener(v -> {
             this.bleViewModel.sendCurrentTime();
@@ -147,6 +161,18 @@ public class BleActivity extends BaseTemplateActivity {
         this.bleViewModel.getCalendar().observe(this, time -> {
             SimpleDateFormat test = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
             readCurrentTimeTV.setText(test.format(time.getTime()));
+        });
+
+        //Send integer value
+        this.sendIntegerValET = findViewById(R.id.send_integer_ET);
+        this.sendIntegerValBTN = findViewById(R.id.send_integer);
+        this.sendIntegerValBTN.setOnClickListener(v -> {
+            try {
+                Integer i = Integer.parseInt(sendIntegerValET.getText().toString());
+                this.bleViewModel.sendIntegerVal(i);
+            } catch (final NumberFormatException e) {
+                Toast.makeText(this, "Erreur saisie", Toast.LENGTH_SHORT).show();
+            }
         });
     }
 
