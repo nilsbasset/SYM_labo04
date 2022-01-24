@@ -17,13 +17,16 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
 
 import androidx.lifecycle.ViewModelProvider;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.SimpleTimeZone;
 
 import ch.heigvd.iict.sym_labo4.abstractactivies.BaseTemplateActivity;
 import ch.heigvd.iict.sym_labo4.adapters.ResultsAdapter;
@@ -64,7 +67,17 @@ public class BleActivity extends BaseTemplateActivity {
     private boolean isScanning = false;
 
     //button
-    private Button sendCurrentTime = null;
+    private Button sendCurrentTimeBTN = null;
+    private Button readTemperatureBTN = null;
+    private Button sendIntegerValBTN = null;
+
+    //textView
+    private TextView readTemperatureTV = null;
+    private TextView readNbrClickTV = null;
+    private TextView readCurrentTimeTV = null;
+
+    //EditText
+    private EditText sendIntegerValET = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -108,9 +121,32 @@ public class BleActivity extends BaseTemplateActivity {
         this.bleViewModel.isConnected().observe(this, (isConnected) -> updateGui() );
 
         //Send current timer
-        this.sendCurrentTime = findViewById(R.id.send_current_time);
-        this.sendCurrentTime.setOnClickListener(v -> {
+        this.sendCurrentTimeBTN = findViewById(R.id.send_current_time);
+        this.sendCurrentTimeBTN.setOnClickListener(v -> {
             this.bleViewModel.sendCurrentTime();
+        });
+
+        //Read temperature
+        this.readTemperatureBTN = findViewById(R.id.read_temperature);
+        this.readTemperatureBTN.setOnClickListener(v -> {
+            this.bleViewModel.readTemperature();
+        });
+        this.readTemperatureTV = findViewById(R.id.read_temperature_value);
+        this.bleViewModel.getTemperature().observe(this, temperature -> {
+            readTemperatureTV.setText(temperature.toString() + " °C");
+        });
+
+        //Read nbr click
+        this.readNbrClickTV = findViewById(R.id.read_clickcounter_value);
+        this.bleViewModel.getCptBtnClick().observe(this, nbrClick -> {
+            readNbrClickTV.setText(nbrClick.toString());
+        });
+
+        //Read current time
+        this.readCurrentTimeTV = findViewById(R.id.read_current_time_value);
+        this.bleViewModel.getCalendar().observe(this, time -> {
+            SimpleDateFormat test = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            readCurrentTimeTV.setText(test.format(time.getTime()));
         });
     }
 

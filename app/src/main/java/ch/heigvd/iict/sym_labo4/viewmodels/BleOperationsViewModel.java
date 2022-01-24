@@ -47,6 +47,9 @@ public class BleOperationsViewModel extends AndroidViewModel {
     private final MutableLiveData<Integer> mCptBtnClick = new MutableLiveData<>();
     public LiveData<Integer> getCptBtnClick() { return mCptBtnClick; }
 
+    private final MutableLiveData<Integer> mTemperature = new MutableLiveData<>();
+    public LiveData<Integer> getTemperature() { return mTemperature; }
+
     //Services and Characteristics of the SYM Pixl
     private BluetoothGattService timeService = null, symService = null;
     private BluetoothGattCharacteristic currentTimeChar = null, integerChar = null, temperatureChar = null, buttonClickChar = null;
@@ -107,6 +110,7 @@ public class BleOperationsViewModel extends AndroidViewModel {
         if(!isConnected().getValue() || temperatureChar == null) return false;
         return ble.readTemperature();
     }
+
 
     private final ConnectionObserver bleConnectionObserver = new ConnectionObserver() {
         @Override
@@ -218,7 +222,7 @@ public class BleOperationsViewModel extends AndroidViewModel {
                         setNotificationCallback(currentTimeChar).with(((device, data) -> {
                             Calendar calendar = Calendar.getInstance();
                             calendar.set(Calendar.YEAR, data.getIntValue(Data.FORMAT_UINT16,0));
-                            calendar.set(Calendar.MONTH, data.getIntValue(Data.FORMAT_UINT8,2));
+                            calendar.set(Calendar.MONTH, data.getIntValue(Data.FORMAT_UINT8,2) - 1);
                             calendar.set(Calendar.DAY_OF_MONTH, data.getIntValue(Data.FORMAT_UINT8,3));
                             calendar.set(Calendar.HOUR, data.getIntValue(Data.FORMAT_UINT8,4));
                             calendar.set(Calendar.MINUTE, data.getIntValue(Data.FORMAT_UINT8,5));
@@ -269,7 +273,7 @@ public class BleOperationsViewModel extends AndroidViewModel {
 
             writeCharacteristic(currentTimeChar, val).enqueue();
 
-            return false;
+            return true;
         }
 
 
@@ -280,7 +284,10 @@ public class BleOperationsViewModel extends AndroidViewModel {
                 des MutableLiveData
                 On placera des méthodes similaires pour les autres opérations
             */
-            return false; //FIXME
+            readCharacteristic(temperatureChar).with((device, data) -> {
+                mTemperature.setValue(data.getIntValue(Data.FORMAT_UINT16, 0) / 10);
+            }).enqueue();
+            return true; //FIXME
         }
 
     }
