@@ -1,3 +1,9 @@
+/**
+ * Nom de fichier: CompassActivity.java
+ * Description:
+ * Auteurs: Basset Nils, Da Rocha Carvalho Bruno, Thurnherr Gabrielle
+ * Date: 27.01.2022
+ */
 package ch.heigvd.iict.sym_labo4;
 
 import android.hardware.Sensor;
@@ -51,16 +57,6 @@ public class CompassActivity extends AppCompatActivity implements SensorEventLis
         magneticField = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
 
     }
-
-    /*
-     TODO
-        your activity need to register to accelerometer and magnetometer sensors' updates
-        then you may want to call
-        opglr.swapRotMatrix()
-        with the 4x4 rotation matrix, every time a new matrix is computed
-        more information on rotation matrix can be found online:
-        https://developer.android.com/reference/android/hardware/SensorManager.html#getRotationMatrix(float[],%20float[],%20float[],%20float[])
-    */
 
     @Override
     public void onSensorChanged(SensorEvent event){

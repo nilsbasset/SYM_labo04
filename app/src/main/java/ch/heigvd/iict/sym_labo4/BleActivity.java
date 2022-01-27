@@ -1,3 +1,10 @@
+/**
+ * Nom de fichier: BleActivity.java
+ * Description:
+ * Auteurs: Basset Nils, Da Rocha Carvalho Bruno, Thurnherr Gabrielle
+ * Date: 27.01.2022
+ */
+
 package ch.heigvd.iict.sym_labo4;
 
 import android.app.AlertDialog;
