@@ -1,6 +1,6 @@
 /**
  * Nom de fichier: BleActivity.java
- * Description:
+ * Description: Gestion des périphériques bluetooth et plus précisement l'écran espruino pixel.js
  * Auteurs: Basset Nils, Da Rocha Carvalho Bruno, Thurnherr Gabrielle
  * Date: 27.01.2022
  */
@@ -17,6 +17,7 @@ import android.bluetooth.le.ScanResult;
 import android.bluetooth.le.ScanSettings;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.ParcelUuid;
@@ -31,6 +32,7 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.RequiresApi;
 import androidx.lifecycle.ViewModelProvider;
 
 import java.text.SimpleDateFormat;
@@ -89,6 +91,7 @@ public class BleActivity extends BaseTemplateActivity {
     //EditText
     private EditText sendIntegerValET = null;
 
+    @RequiresApi(api = Build.VERSION_CODES.O)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -166,8 +169,8 @@ public class BleActivity extends BaseTemplateActivity {
         //Read current time
         this.readCurrentTimeTV = findViewById(R.id.read_current_time_value);
         this.bleViewModel.getCalendar().observe(this, time -> {
-            SimpleDateFormat test = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-            readCurrentTimeTV.setText(test.format(time.getTime()));
+            SimpleDateFormat dateFormat = new SimpleDateFormat("EEE MMM dd yyyy HH:mm:ss");
+            readCurrentTimeTV.setText(dateFormat.format(time.getTime()));
         });
 
         //Send integer value
@@ -175,7 +178,7 @@ public class BleActivity extends BaseTemplateActivity {
         this.sendIntegerValBTN = findViewById(R.id.send_integer);
         this.sendIntegerValBTN.setOnClickListener(v -> {
             try {
-                Integer i = Integer.parseInt(sendIntegerValET.getText().toString());
+                Integer i = Integer.parseUnsignedInt(sendIntegerValET.getText().toString());
                 this.bleViewModel.sendIntegerVal(i);
             } catch (final NumberFormatException e) {
                 Toast.makeText(this, "Erreur saisie", Toast.LENGTH_SHORT).show();

@@ -1,6 +1,6 @@
 /**
  * Nom de fichier: CompassActivity.java
- * Description:
+ * Description: Gestion d'une boussole 3D en fonction des capteurs accéléromètre et champs magnétique
  * Auteurs: Basset Nils, Da Rocha Carvalho Bruno, Thurnherr Gabrielle
  * Date: 27.01.2022
  */
