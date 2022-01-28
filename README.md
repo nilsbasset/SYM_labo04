@@ -39,3 +39,13 @@ Ensuite nous avons dû mettre en place différent type d'échange : lecture, éc
 Le type float est sur 32 bits ce qui est pas du tout nécessaire pour envoyer une information de température. Cela ferait des communication plus conséquente. Un entier non-signé sur 16 bits est largement suffisant. Comme ça la communication peut être plus légère et nous pouvons faire la transformation en float dans notre code.
 
 > Le niveau de charge de la pile est à présent indiqué uniquement sur l’écran du périphérique, mais nous souhaiterions que celui-ci puisse informer le smartphone sur son niveau de charge restante. Veuillez spécifier la(les) caractéristique(s) qui composerai(en)t un tel service, mis à disposition par le périphérique et permettant de communiquer le niveau de batterie restant via Bluetooth Low Energy. Pour chaque caractéristique, vous indiquerez les opérations supportées (lecture, écriture, notification, indication, etc.) ainsi que les données échangées et leur format.
+
+Le service permettant de lire d'informer le niveau de batterie d'un smartphone est <a href="https://www.bluetooth.com/wp-content/uploads/Sitecore-Media-Library/Gatt/Xml/Services/org.bluetooth.service.battery_service.xml">`Battery Service`</a>.
+
+| Name            | Type                                  | uuid |
+|-----------------|---------------------------------------|------|
+| Battery Service | org.bluetooth.service.battery_service | 180F |
+
+Cette caractèristique est lisible en utilisant le `GATT Read Characteristic Value sub-procedure` et nous retourne le niveau de batterie courant comme un pourcentage variant de 0% à 100%.
+
+On voit donc que les propriétés de `Read` et de `Notify` sont accessible est utilisable. On pourrait donc envisager d'utiliser l'une ou l'autre des propriété pour que le périphérique informe le smartphone du niveau de batterie lui restant.
