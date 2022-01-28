@@ -1,23 +1,44 @@
+/**
+ * Nom de fichier: BleActivity.java
+ * Description: Gestion des périphériques bluetooth et plus précisement l'écran espruino pixel.js
+ * Auteurs: Basset Nils, Da Rocha Carvalho Bruno, Thurnherr Gabrielle
+ * Date: 27.01.2022
+ */
+
 package ch.heigvd.iict.sym_labo4;
 
+import android.app.AlertDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.le.BluetoothLeScanner;
 import android.bluetooth.le.ScanCallback;
+import android.bluetooth.le.ScanFilter;
 import android.bluetooth.le.ScanResult;
 import android.bluetooth.le.ScanSettings;
 import android.content.Context;
+import android.content.DialogInterface;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.ParcelUuid;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import androidx.annotation.RequiresApi;
 import androidx.lifecycle.ViewModelProvider;
+
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.SimpleTimeZone;
 
 import ch.heigvd.iict.sym_labo4.abstractactivies.BaseTemplateActivity;
 import ch.heigvd.iict.sym_labo4.adapters.ResultsAdapter;
@@ -57,10 +78,35 @@ public class BleActivity extends BaseTemplateActivity {
     private Handler handler = null;
     private boolean isScanning = false;
 
+    //button
+    private Button sendCurrentTimeBTN = null;
+    private Button readTemperatureBTN = null;
+    private Button sendIntegerValBTN = null;
+
+    //textView
+    private TextView readTemperatureTV = null;
+    private TextView readNbrClickTV = null;
+    private TextView readCurrentTimeTV = null;
+
+    //EditText
+    private EditText sendIntegerValET = null;
+
+    @RequiresApi(api = Build.VERSION_CODES.O)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_ble);
+
+        AlertDialog alertDialog = new AlertDialog.Builder(this)
+                .setTitle("Informations :")
+                .setMessage("L'application nécessite l'activation du bluetooth")
+                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.dismiss();
+                    }
+                }).create();
+        alertDialog.show();
 
         this.handler = new Handler();
 
@@ -98,6 +144,46 @@ public class BleActivity extends BaseTemplateActivity {
         //ble events
         this.bleViewModel.isConnected().observe(this, (isConnected) -> updateGui() );
 
+        //Send current time
+        this.sendCurrentTimeBTN = findViewById(R.id.send_current_time);
+        this.sendCurrentTimeBTN.setOnClickListener(v -> {
+            this.bleViewModel.sendCurrentTime();
+        });
+
+        //Read temperature
+        this.readTemperatureBTN = findViewById(R.id.read_temperature);
+        this.readTemperatureBTN.setOnClickListener(v -> {
+            this.bleViewModel.readTemperature();
+        });
+        this.readTemperatureTV = findViewById(R.id.read_temperature_value);
+        this.bleViewModel.getTemperature().observe(this, temperature -> {
+            readTemperatureTV.setText(temperature.toString() + " °C");
+        });
+
+        //Read nbr click
+        this.readNbrClickTV = findViewById(R.id.read_clickcounter_value);
+        this.bleViewModel.getCptBtnClick().observe(this, nbrClick -> {
+            readNbrClickTV.setText(nbrClick.toString());
+        });
+
+        //Read current time
+        this.readCurrentTimeTV = findViewById(R.id.read_current_time_value);
+        this.bleViewModel.getCalendar().observe(this, time -> {
+            SimpleDateFormat dateFormat = new SimpleDateFormat("EEE MMM dd yyyy HH:mm:ss");
+            readCurrentTimeTV.setText(dateFormat.format(time.getTime()));
+        });
+
+        //Send integer value
+        this.sendIntegerValET = findViewById(R.id.send_integer_ET);
+        this.sendIntegerValBTN = findViewById(R.id.send_integer);
+        this.sendIntegerValBTN.setOnClickListener(v -> {
+            try {
+                Integer i = Integer.parseUnsignedInt(sendIntegerValET.getText().toString());
+                this.bleViewModel.sendIntegerVal(i);
+            } catch (final NumberFormatException e) {
+                Toast.makeText(this, "Erreur saisie", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     @Override
@@ -172,15 +258,18 @@ public class BleActivity extends BaseTemplateActivity {
             builderScanSettings.setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY);
             builderScanSettings.setReportDelay(0);
 
-            //we scan for any BLE device
-            //we don't filter them based on advertised services...
-            // TODO ajouter un filtre pour n'afficher que les devices proposant
+            // Filtre scan blueooth
             // le service "SYM" (UUID: "3c0a1000-281d-4b48-b2a7-f15579a1c38f")
+            List<ScanFilter> filters = new ArrayList<>();
+            ScanFilter scanFilter = new ScanFilter.Builder()
+                    .setServiceUuid(ParcelUuid.fromString("3c0a1000-281d-4b48-b2a7-f15579a1c38f"))
+                    .build();
+            filters.add(scanFilter);
 
             //reset display
             scanResultsAdapter.clear();
 
-            bluetoothScanner.startScan(null, builderScanSettings.build(), leScanCallback);
+            bluetoothScanner.startScan(filters, builderScanSettings.build(), leScanCallback);
             Log.d(TAG,"Start scanning...");
             isScanning = true;
 
